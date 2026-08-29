@@ -1,25 +1,17 @@
 import type { CharacterTemplate } from '../assets/templates'
 import { characterTemplates } from '../assets/templates'
-import type { PartColors } from '../types'
-import { PART_ORDER, getPartPresentation } from '../utils/svgTemplate'
+import { DEFAULT_PART_COLOR, PART_ORDER, getPartPresentation } from '../utils/svgTemplate'
 
 type TemplatePickerProps = {
   selectedId: string
-  partColors: PartColors
   onSelect: (templateId: string) => void
 }
 
-function TemplateThumb({
-  template,
-  partColors,
-}: {
-  template: CharacterTemplate
-  partColors: PartColors
-}) {
+function TemplateThumb({ template }: { template: CharacterTemplate }) {
   const paint = (layer: 'outline' | 'fill') =>
     PART_ORDER.map((partId) => {
       const part = template.parts[partId]
-      const presentation = getPartPresentation(part, partColors[partId], layer)
+      const presentation = getPartPresentation(part, DEFAULT_PART_COLOR, layer)
 
       return (
         <path
@@ -47,12 +39,11 @@ function TemplateThumb({
 }
 
 /**
- * Pose picker. Changing the pose mid-edit keeps the colours already applied,
- * so a hider can try a different silhouette without losing their camouflage.
+ * Pose picker. Paint is reset when the pose changes because strokes are stored
+ * in the selected template's local coordinate space.
  */
 export function TemplatePicker({
   selectedId,
-  partColors,
   onSelect,
 }: TemplatePickerProps) {
   return (
@@ -70,7 +61,7 @@ export function TemplatePicker({
               selected ? 'border-sky-500' : 'border-transparent'
             }`}
           >
-            <TemplateThumb template={template} partColors={partColors} />
+            <TemplateThumb template={template} />
             <span className="text-xs font-medium text-neutral-600">
               {template.label}
             </span>

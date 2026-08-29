@@ -1,7 +1,6 @@
 import type { CharacterTransform } from '../../../shared/types'
-import type { EditorSnapshot, PartColors, PartId } from '../types'
+import type { EditorSnapshot, PaintStroke } from '../types'
 import { clampTransform } from '../utils/geometry'
-import { createDefaultPartColors } from '../utils/svgTemplate'
 
 /**
  * Editor state with undo history.
@@ -21,8 +20,8 @@ export type EditorState = {
 
 export type EditorAction =
   | { type: 'SET_TEMPLATE'; templateId: string }
-  | { type: 'SET_PART_COLOR'; partId: PartId; color: string }
-  | { type: 'SET_ALL_PART_COLORS'; color: string }
+  | { type: 'BEGIN_PAINT_STROKE'; stroke: PaintStroke }
+  | { type: 'UPDATE_PAINT_STROKE'; points: PaintStroke['points'] }
   | { type: 'BEGIN_GESTURE' }
   | { type: 'SET_TRANSFORM'; transform: CharacterTransform }
   | { type: 'UNDO' }
@@ -41,7 +40,7 @@ export function createInitialEditorState(templateId: string): EditorState {
   return {
     present: {
       templateId,
-      partColors: createDefaultPartColors(),
+      paintStrokes: [],
       transform: INITIAL_TRANSFORM,
     },
     past: [],
@@ -62,32 +61,36 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         return state
       }
 
-      // Pose changes keep the colours the hider already picked.
-      return push(state, { ...state.present, templateId: action.templateId })
+      // Paint is tied to the selected silhouette, so changing pose starts with
+      // a clean canvas instead of leaving strokes at unrelated coordinates.
+      return push(state, {
+        ...state.present,
+        templateId: action.templateId,
+        paintStrokes: [],
+      })
     }
 
-    case 'SET_PART_COLOR': {
-      if (state.present.partColors[action.partId] === action.color) {
+    case 'BEGIN_PAINT_STROKE': {
+      return push(state, {
+        ...state.present,
+        paintStrokes: [...state.present.paintStrokes, action.stroke],
+      })
+    }
+
+    case 'UPDATE_PAINT_STROKE': {
+      const lastStrokeIndex = state.present.paintStrokes.length - 1
+
+      if (lastStrokeIndex < 0) {
         return state
       }
 
-      const partColors: PartColors = {
-        ...state.present.partColors,
-        [action.partId]: action.color,
+      const paintStrokes = [...state.present.paintStrokes]
+      paintStrokes[lastStrokeIndex] = {
+        ...paintStrokes[lastStrokeIndex],
+        points: action.points,
       }
 
-      return push(state, { ...state.present, partColors })
-    }
-
-    case 'SET_ALL_PART_COLORS': {
-      const partColors: PartColors = {
-        head: action.color,
-        body: action.color,
-        arms: action.color,
-        legs: action.color,
-      }
-
-      return push(state, { ...state.present, partColors })
+      return { ...state, present: { ...state.present, paintStrokes } }
     }
 
     case 'BEGIN_GESTURE':

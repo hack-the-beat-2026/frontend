@@ -1,20 +1,12 @@
 import type { CharacterTemplate, TemplatePart } from '../assets/templates'
-import type { PartColors, PartId } from '../types'
+import type { PaintStroke, PartId } from '../types'
 
-/**
- * Single source of truth for how a template part is painted.
- *
- * Both the on-screen React layer (`CharacterLayer`) and the PNG exporter
- * (`exportImages`) call `getPartPresentation`, so what the hider sees is what
- * gets submitted. Do not inline these attributes anywhere else.
- */
-
-/** Back to front. Head paints last so it sits on top of the torso. */
+/** Back to front. These paths define the silhouette and its clipping shape. */
 export const PART_ORDER: PartId[] = ['legs', 'arms', 'body', 'head']
 
 export const DEFAULT_PART_COLOR = '#ffffff'
 
-/** A dark rim keeps a white silhouette readable on a bright photo. */
+/** A dark rim keeps the unpainted silhouette readable on a bright photo. */
 export const OUTLINE_COLOR = 'rgba(17, 17, 22, 0.55)'
 const OUTLINE_EXTRA_WIDTH = 7
 
@@ -52,44 +44,64 @@ export function getPartPresentation(
     : { fill: color, stroke: 'none', strokeWidth: 0 }
 }
 
-export function createDefaultPartColors(): PartColors {
-  return {
-    head: DEFAULT_PART_COLOR,
-    body: DEFAULT_PART_COLOR,
-    arms: DEFAULT_PART_COLOR,
-    legs: DEFAULT_PART_COLOR,
+function renderPart(templatePart: TemplatePart, color: string, layer: PartLayer) {
+  const { fill, stroke, strokeWidth } = getPartPresentation(templatePart, color, layer)
+
+  return (
+    `<path d="${templatePart.d}" fill="${fill}" stroke="${stroke}"` +
+    ` stroke-width="${strokeWidth}" stroke-linecap="round"` +
+    ' stroke-linejoin="round"/>'
+  )
+}
+
+function renderClipPart(templatePart: TemplatePart) {
+  if (typeof templatePart.strokeWidth === 'number') {
+    return `<path d="${templatePart.d}" fill="none" stroke="#000" stroke-width="${templatePart.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`
   }
+
+  return `<path d="${templatePart.d}" fill="#000"/>`
+}
+
+function renderStroke(stroke: PaintStroke) {
+  const [first, ...rest] = stroke.points
+
+  if (!first) {
+    return ''
+  }
+
+  const points = rest.map(({ x, y }) => `L ${x} ${y}`).join(' ')
+  const path = points ? `M ${first.x} ${first.y} ${points}` : `M ${first.x} ${first.y} l 0.01 0`
+
+  return (
+    `<path d="${path}" fill="none" stroke="${stroke.color}"` +
+    ` stroke-width="${stroke.width}" stroke-linecap="round" stroke-linejoin="round"/>`
+  )
 }
 
 /**
- * Serialise the coloured character to a standalone SVG document.
- *
- * Used only for rasterising to `character.png`. The background stays empty so
- * the exported PNG is transparent (contractRules.md §15).
+ * Serialise the silhouette and freehand paint strokes to a standalone SVG.
+ * Paint is clipped to the silhouette, while the stroke coordinates remain in
+ * template space so the same result can be used by the screen and exporter.
  */
 export function buildCharacterSvg(
   template: CharacterTemplate,
-  partColors: PartColors,
+  paintStrokes: PaintStroke[],
 ): string {
-  const paint = (layer: PartLayer) =>
-    PART_ORDER.map((partId) => {
-      const part = template.parts[partId]
-      const { fill, stroke, strokeWidth } = getPartPresentation(
-        part,
-        partColors[partId],
-        layer,
-      )
-
-      return (
-        `<path d="${part.d}" fill="${fill}" stroke="${stroke}"` +
-        ` stroke-width="${strokeWidth}" stroke-linecap="round"` +
-        ' stroke-linejoin="round"/>'
-      )
-    }).join('')
+  const clipId = 'character-clip'
+  const clip = PART_ORDER.map((partId) => renderClipPart(template.parts[partId])).join('')
+  const outline = PART_ORDER
+    .map((partId) => renderPart(template.parts[partId], DEFAULT_PART_COLOR, 'outline'))
+    .join('')
+  const fill = PART_ORDER
+    .map((partId) => renderPart(template.parts[partId], DEFAULT_PART_COLOR, 'fill'))
+    .join('')
+  const strokes = paintStrokes.map(renderStroke).join('')
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${template.width} ${template.height}"` +
     ` width="${template.width}" height="${template.height}">` +
-    `<g>${paint('outline')}</g><g>${paint('fill')}</g></svg>`
+    `<defs><clipPath id="${clipId}">${clip}</clipPath></defs>` +
+    `<g>${outline}</g><g>${fill}</g>` +
+    `<g clip-path="url(#${clipId})">${strokes}</g></svg>`
   )
 }

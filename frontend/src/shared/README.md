@@ -19,33 +19,23 @@ domain types and API calls to live here, and no feature may redeclare them
 | `types/character.ts` | §5 — `CharacterStatus`; §16 — `CharacterTransform`; §17 — `CharacterSubmitRequest`; §22 — `CharacterFoundResponse` |
 | `types/api.ts` | §31 — `ApiError`; §32 — the error codes that must be handled |
 | `api/client.ts` | §7 — base URL `/api/v1`; §6 — Bearer token handling; §31 — error parsing |
-| `api/characterApi.ts` | §17 — `POST /api/v1/games/{gameId}/characters` |
-| `api/uploadApi.ts` | ⚠️ **not specified — open contract** |
+| `api/characterApi.ts` | Backend `POST /api/v1/games/{gameId}/characters` multipart contract |
+| `api/backendApi.ts` | Room, Game, Character, Scan and Result REST endpoints |
 
-## Open contract: image upload
+## Backend image submission
 
-`contractRules.md` §17 requires three **URLs** in the character submit payload:
-
-```text
-originalPhotoUrl
-characterImageUrl
-previewImageUrl
-```
-
-The frontend produces three `Blob`s (§15), but **no upload endpoint is defined
-anywhere in the contract**. `api/uploadApi.ts` therefore ships a local adapter
-that returns `URL.createObjectURL(blob)`.
-
-**To wire up the real backend, replace only the body of `uploadImage`.** Its
-signature is the seam every caller is written against, so no feature code needs
-to change.
+The backend accepts the three image `Blob`s and JSON metadata together as one
+`multipart/form-data` request. `api/characterApi.ts` creates the `metadata`,
+`originalPhoto`, `characterImage` and `previewImage` parts, so no temporary
+upload URLs are generated in the browser.
 
 ## Rules for anyone editing this directory
 
 - Do not rename or remove existing types or fields (`frontend_agent.md` Rule 4).
 - Do not add feature-specific types here; keep them inside the owning feature.
 - Components must never call `fetch` directly — go through `shared/api` (§8).
-- The client only **reads** tokens from `localStorage`. Never mint one (§6).
+- The client only stores tokens returned by the backend and sends them as Bearer
+  tokens. It never creates tokens (§6).
 - Imports use relative paths: there is no `@/` alias configured, and adding one
   would mean editing `tsconfig.app.json` and `vite.config.ts`, which are shared
   root files.

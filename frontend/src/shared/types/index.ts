@@ -1,4 +1,4 @@
-export type { GameStatus } from './game'
+export type { GameResponse, GameStatus, GameWinner } from './game'
 export type {
   GameRole,
   ParticipantStatus,
@@ -6,6 +6,7 @@ export type {
 } from './participant'
 export type {
   CharacterFoundResponse,
+  CharacterResponse,
   CharacterStatus,
   CharacterSubmitRequest,
   CharacterTransform,

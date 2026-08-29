@@ -1,38 +1,60 @@
+import { useId } from 'react'
 import type { CharacterTransform } from '../../../shared/types'
 import type { CharacterTemplate } from '../assets/templates'
-import type { PartColors, PartId } from '../types'
+import type { PaintStroke } from '../types'
 import type { Size } from '../utils/geometry'
 import { getCharacterPixelBox } from '../utils/geometry'
-import { PART_ORDER, getPartPresentation } from '../utils/svgTemplate'
+import {
+  DEFAULT_PART_COLOR,
+  PART_ORDER,
+  getPartPresentation,
+} from '../utils/svgTemplate'
 
 type CharacterLayerProps = {
   template: CharacterTemplate
-  partColors: PartColors
+  paintStrokes: PaintStroke[]
   transform: CharacterTransform
   surface: Size
-  highlightPart?: PartId | null
 }
 
-/**
- * Draws the character over the photo.
- *
- * Presentation comes from `getPartPresentation` and placement from
- * `getCharacterPixelBox` — the same two helpers `exportImages` uses, so the
- * preview that gets submitted matches this view exactly.
- */
+function strokePath(stroke: PaintStroke) {
+  const [first, ...rest] = stroke.points
+
+  if (!first) {
+    return null
+  }
+
+  const restOfPath = rest.map(({ x, y }) => `L ${x} ${y}`).join(' ')
+  const d = restOfPath
+    ? `M ${first.x} ${first.y} ${restOfPath}`
+    : `M ${first.x} ${first.y} l 0.01 0`
+
+  return (
+    <path
+      d={d}
+      fill="none"
+      stroke={stroke.color}
+      strokeWidth={stroke.width}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  )
+}
+
+/** Draws the white silhouette and clips freehand paint to its shape. */
 export function CharacterLayer({
   template,
-  partColors,
+  paintStrokes,
   transform,
   surface,
-  highlightPart = null,
 }: CharacterLayerProps) {
   const box = getCharacterPixelBox(template, transform, surface)
+  const clipId = `character-clip-${useId().replaceAll(':', '')}`
 
   const paint = (layer: 'outline' | 'fill') =>
     PART_ORDER.map((partId) => {
       const part = template.parts[partId]
-      const presentation = getPartPresentation(part, partColors[partId], layer)
+      const presentation = getPartPresentation(part, DEFAULT_PART_COLOR, layer)
 
       return (
         <path
@@ -47,8 +69,6 @@ export function CharacterLayer({
       )
     })
 
-  const highlight = highlightPart ? template.parts[highlightPart] : null
-
   return (
     <svg
       viewBox={`0 0 ${template.width} ${template.height}`}
@@ -62,20 +82,33 @@ export function CharacterLayer({
       }}
       aria-hidden="true"
     >
+      <defs>
+        <clipPath id={clipId}>
+          {PART_ORDER.map((partId) => {
+            const part = template.parts[partId]
+
+            return (
+              <path
+                key={partId}
+                d={part.d}
+                fill={typeof part.strokeWidth === 'number' ? 'none' : '#000'}
+                stroke={typeof part.strokeWidth === 'number' ? '#000' : 'none'}
+                strokeWidth={part.strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )
+          })}
+        </clipPath>
+      </defs>
+
       <g>{paint('outline')}</g>
       <g>{paint('fill')}</g>
-      {highlight ? (
-        <path
-          d={highlight.d}
-          fill="none"
-          stroke="#38bdf8"
-          strokeWidth={(highlight.strokeWidth ?? 0) + 5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray="10 8"
-          opacity={0.9}
-        />
-      ) : null}
+      <g clipPath={`url(#${clipId})`}>
+        {paintStrokes.map((stroke, index) => (
+          <g key={`${stroke.color}-${index}`}>{strokePath(stroke)}</g>
+        ))}
+      </g>
     </svg>
   )
 }

@@ -1,64 +1,61 @@
-import type { PartColors, PartId } from '../types'
 import { readableTextColor } from '../utils/color'
 
-const PART_LABELS: Record<PartId, string> = {
-  head: '머리',
-  body: '몸통',
-  arms: '팔',
-  legs: '다리',
-}
-
-const PART_IDS: PartId[] = ['head', 'body', 'arms', 'legs']
-
 type PalettePanelProps = {
-  partColors: PartColors
-  selectedPart: PartId
   sampledColors: string[]
   activeColor: string | null
   eyedropperActive: boolean
   eyedropperReady: boolean
-  onSelectPart: (partId: PartId) => void
+  paintMode: boolean
+  brushWidth: number
   onPickColor: (color: string) => void
-  onApplyToPart: () => void
-  onApplyToAll: () => void
   onToggleEyedropper: () => void
+  onTogglePaintMode: () => void
+  onBrushWidthChange: (width: number) => void
 }
 
-/**
- * Eyedropper + per-part colouring.
- *
- * MVP colouring level is part-based fill (Head / Body / Arms / Legs), per
- * `frontend_agent.md` §5. There is no freehand brush.
- */
+/** Picks a photo colour, then paints it freely over the character. */
 export function PalettePanel({
-  partColors,
-  selectedPart,
   sampledColors,
   activeColor,
   eyedropperActive,
   eyedropperReady,
-  onSelectPart,
+  paintMode,
+  brushWidth,
   onPickColor,
-  onApplyToPart,
-  onApplyToAll,
   onToggleEyedropper,
+  onTogglePaintMode,
+  onBrushWidthChange,
 }: PalettePanelProps) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-neutral-300/60 p-3">
       <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onToggleEyedropper}
-          disabled={!eyedropperReady}
-          aria-pressed={eyedropperActive}
-          className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-40 ${
-            eyedropperActive
-              ? 'bg-sky-500 text-white'
-              : 'border border-neutral-300 text-neutral-700'
-          }`}
-        >
-          스포이드 {eyedropperActive ? '끄기' : '켜기'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onToggleEyedropper}
+            disabled={!eyedropperReady}
+            aria-pressed={eyedropperActive}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-40 ${
+              eyedropperActive
+                ? 'bg-sky-500 text-white'
+                : 'border border-neutral-300 text-neutral-700'
+            }`}
+          >
+            스포이드 {eyedropperActive ? '끄기' : '켜기'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onTogglePaintMode}
+            disabled={!activeColor}
+            aria-pressed={paintMode}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-40 ${
+              paintMode ? 'bg-emerald-500 text-white' : 'border border-neutral-300 text-neutral-700'
+            }`}
+          >
+            {paintMode ? '색칠 중' : '색칠 모드'}
+          </button>
+        </div>
 
         <div
           className="flex h-10 min-w-24 items-center justify-center rounded-xl border border-neutral-300 px-3 text-xs font-medium"
@@ -96,49 +93,24 @@ export function PalettePanel({
         )}
       </div>
 
-      <div>
-        <p className="mb-1 text-xs font-medium text-neutral-500">색칠할 부위</p>
-        <div className="grid grid-cols-4 gap-2">
-          {PART_IDS.map((partId) => (
-            <button
-              key={partId}
-              type="button"
-              onClick={() => onSelectPart(partId)}
-              aria-pressed={partId === selectedPart}
-              className={`flex flex-col items-center gap-1 rounded-lg border-2 py-2 text-xs font-medium ${
-                partId === selectedPart
-                  ? 'border-sky-500 text-sky-600'
-                  : 'border-neutral-300 text-neutral-600'
-              }`}
-            >
-              <span
-                className="h-4 w-4 rounded-full border border-neutral-300"
-                style={{ backgroundColor: partColors[partId] }}
-              />
-              {PART_LABELS[partId]}
-            </button>
-          ))}
-        </div>
-      </div>
+      <label className="flex items-center gap-3 text-sm text-neutral-600">
+        <span className="shrink-0">붓 크기</span>
+        <input
+          type="range"
+          min="8"
+          max="64"
+          step="2"
+          value={brushWidth}
+          onChange={(event) => onBrushWidthChange(Number(event.target.value))}
+          className="flex-1"
+        />
+        <span className="w-10 shrink-0 text-right tabular-nums">{brushWidth}</span>
+      </label>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onApplyToPart}
-          disabled={!activeColor}
-          className="flex-1 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          {PART_LABELS[selectedPart]}에 칠하기
-        </button>
-        <button
-          type="button"
-          onClick={onApplyToAll}
-          disabled={!activeColor}
-          className="flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 disabled:opacity-40"
-        >
-          전체에 칠하기
-        </button>
-      </div>
+      <p className="text-xs text-neutral-500">
+        배경에서 색을 뽑은 뒤 <strong>색칠 모드</strong>를 켜고 캐릭터 위를 드래그하세요.
+        머리·팔·몸통·다리 구분 없이 원하는 위치에 칠할 수 있어요.
+      </p>
     </div>
   )
 }

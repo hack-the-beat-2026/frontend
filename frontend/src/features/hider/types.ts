@@ -12,14 +12,25 @@ import type { CharacterTransform } from '../../shared/types'
 /** Local screen machine inside the design page. Never a `GameStatus`. */
 export type EditorUiState = 'CAMERA' | 'SELECT_TEMPLATE' | 'EDITING' | 'PREVIEW'
 
+/** Internal silhouette paths used only to build the clipping mask. */
 export type PartId = 'head' | 'body' | 'arms' | 'legs'
 
-export type PartColors = Record<PartId, string>
+export type PaintPoint = {
+  x: number
+  y: number
+}
+
+/** A freehand brush stroke in the template's local coordinate space. */
+export type PaintStroke = {
+  color: string
+  width: number
+  points: PaintPoint[]
+}
 
 /** A single undoable state of the editor. */
 export type EditorSnapshot = {
   templateId: string
-  partColors: PartColors
+  paintStrokes: PaintStroke[]
   transform: CharacterTransform
 }
 

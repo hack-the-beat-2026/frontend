@@ -31,16 +31,24 @@ export type CharacterTransform = {
 
 export type CharacterSubmitRequest = {
   templateType: string
-
-  originalPhotoUrl: string
-  characterImageUrl: string
-  previewImageUrl: string
-
   positionX: number
   positionY: number
 
   scale: number
   rotation: number
+}
+
+export type CharacterResponse = CharacterSubmitRequest & {
+  characterId: number
+  gameId: number
+  participantId: number
+  nickname: string
+  originalPhotoUrl: string
+  characterImageUrl: string
+  previewImageUrl: string
+  qrToken?: string
+  status: CharacterStatus
+  submittedAt: string
 }
 
 export type CharacterFoundResponse = {

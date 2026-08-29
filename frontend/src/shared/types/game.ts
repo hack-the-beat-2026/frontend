@@ -13,3 +13,26 @@ export type GameStatus =
   | 'HIDING'
   | 'SEEKING'
   | 'FINISHED'
+
+export type GameWinner = 'NONE' | 'HIDER' | 'SEEKER'
+
+export type GameResponse = {
+  gameId: number
+  roomId: number
+  status: GameStatus
+  myRole: import('./participant').GameRole
+  myParticipantStatus?: import('./participant').ParticipantStatus
+  seekerCount: number
+  hiderCount: number
+  designDurationSeconds: number
+  hideDurationSeconds: number
+  seekDurationSeconds: number
+  designStartedAt: string | null
+  designEndsAt: string | null
+  hideStartedAt: string | null
+  hideEndsAt: string | null
+  seekStartedAt: string | null
+  seekEndsAt: string | null
+  finishedAt: string | null
+  winner: GameWinner
+}

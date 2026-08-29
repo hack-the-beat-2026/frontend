@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { CharacterSubmitRequest, CharacterTransform } from '../../../shared/types'
-import { submitCharacter, uploadImage } from '../../../shared/api'
+import { submitCharacter } from '../../../shared/api'
 import { findTemplate } from '../assets/templates'
 import { CameraCapture } from '../components/CameraCapture'
 import { CamouflageStage } from '../components/CamouflageStage'
@@ -19,7 +19,7 @@ import type {
   CapturedPhoto,
   CharacterExportBundle,
   EditorUiState,
-  PartId,
+  PaintStroke,
   SubmitPhase,
 } from '../types'
 import { defaultTemplate } from '../assets/templates'
@@ -72,10 +72,11 @@ export function HiderDesignPage({
     defaultTemplate.id,
     createInitialEditorState,
   )
-  const [selectedPart, setSelectedPart] = useState<PartId>('body')
   const [sampledColors, setSampledColors] = useState<string[]>([])
   const [activeColor, setActiveColor] = useState<string | null>(null)
   const [eyedropperActive, setEyedropperActive] = useState(false)
+  const [paintMode, setPaintMode] = useState(false)
+  const [brushWidth, setBrushWidth] = useState(28)
   const [bundle, setBundle] = useState<CharacterExportBundle | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [submitPhase, setSubmitPhase] = useState<SubmitPhase>('IDLE')
@@ -114,17 +115,29 @@ export function HiderDesignPage({
     setPhoto(next)
     setSampledColors([])
     setActiveColor(null)
+    setEyedropperActive(false)
+    setPaintMode(false)
     setUiState('SELECT_TEMPLATE')
   }
 
   const handleSampleColor = useCallback((hex: string) => {
     setActiveColor(hex)
+    setEyedropperActive(false)
+    setPaintMode(true)
     setSampledColors((current) =>
       [hex, ...current.filter((color) => color !== hex)].slice(
         0,
         MAX_SAMPLED_COLORS,
       ),
     )
+  }, [])
+
+  const handleBeginPaintStroke = useCallback((stroke: PaintStroke) => {
+    dispatch({ type: 'BEGIN_PAINT_STROKE', stroke })
+  }, [])
+
+  const handleUpdatePaintStroke = useCallback((points: PaintStroke['points']) => {
+    dispatch({ type: 'UPDATE_PAINT_STROKE', points })
   }, [])
 
   const handleTransformChange = useCallback((transform: CharacterTransform) => {
@@ -148,7 +161,7 @@ export function HiderDesignPage({
       const exported = await exportCharacterBundle(
         photo,
         template,
-        editor.present.partColors,
+        editor.present.paintStrokes,
         editor.present.transform,
       )
 
@@ -185,30 +198,8 @@ export function HiderDesignPage({
     setSubmitPhase('UPLOADING')
 
     try {
-      const [originalPhotoUrl, characterImageUrl, previewImageUrl] =
-        await Promise.all([
-          uploadImage({
-            kind: 'original',
-            blob: bundle.original,
-            fileName: 'original.jpg',
-          }),
-          uploadImage({
-            kind: 'character',
-            blob: bundle.character,
-            fileName: 'character.png',
-          }),
-          uploadImage({
-            kind: 'preview',
-            blob: bundle.preview,
-            fileName: 'preview.jpg',
-          }),
-        ])
-
       const payload: CharacterSubmitRequest = {
         templateType: template.id,
-        originalPhotoUrl,
-        characterImageUrl,
-        previewImageUrl,
         positionX: editor.present.transform.positionX,
         positionY: editor.present.transform.positionY,
         scale: editor.present.transform.scale,
@@ -216,7 +207,11 @@ export function HiderDesignPage({
       }
 
       setSubmitPhase('SUBMITTING')
-      await submitCharacter(gameId, payload)
+      await submitCharacter(gameId, payload, {
+        originalPhoto: bundle.original,
+        characterImage: bundle.character,
+        previewImage: bundle.preview,
+      })
 
       setSubmitPhase('DONE')
       onSubmitted({ previewBlob: bundle.preview })
@@ -250,18 +245,21 @@ export function HiderDesignPage({
           <CamouflageStage
             photo={photo}
             template={template}
-            partColors={editor.present.partColors}
+            paintStrokes={editor.present.paintStrokes}
             transform={editor.present.transform}
-            selectedPart={null}
             eyedropperActive={false}
+            paintMode={false}
+            activeColor={null}
+            brushWidth={brushWidth}
             onBeginGesture={handleBeginGesture}
+            onBeginPaintStroke={handleBeginPaintStroke}
+            onUpdatePaintStroke={handleUpdatePaintStroke}
             onTransformChange={handleTransformChange}
             onSampleColor={handleSampleColor}
             sampleColorAt={eyedropper.sample}
           />
           <TemplatePicker
             selectedId={editor.present.templateId}
-            partColors={editor.present.partColors}
             onSelect={(templateId) => dispatch({ type: 'SET_TEMPLATE', templateId })}
           />
           <div className="flex gap-3">
@@ -288,45 +286,43 @@ export function HiderDesignPage({
           <CamouflageStage
             photo={photo}
             template={template}
-            partColors={editor.present.partColors}
+            paintStrokes={editor.present.paintStrokes}
             transform={editor.present.transform}
-            selectedPart={selectedPart}
             eyedropperActive={eyedropperActive}
+            paintMode={paintMode}
+            activeColor={activeColor}
+            brushWidth={brushWidth}
             onBeginGesture={handleBeginGesture}
+            onBeginPaintStroke={handleBeginPaintStroke}
+            onUpdatePaintStroke={handleUpdatePaintStroke}
             onTransformChange={handleTransformChange}
             onSampleColor={handleSampleColor}
             sampleColorAt={eyedropper.sample}
           />
 
           <PalettePanel
-            partColors={editor.present.partColors}
-            selectedPart={selectedPart}
             sampledColors={sampledColors}
             activeColor={activeColor}
             eyedropperActive={eyedropperActive}
             eyedropperReady={eyedropper.ready}
-            onSelectPart={setSelectedPart}
+            paintMode={paintMode}
+            brushWidth={brushWidth}
             onPickColor={setActiveColor}
-            onApplyToPart={() => {
+            onToggleEyedropper={() => {
+              setEyedropperActive((current) => !current)
+              setPaintMode(false)
+            }}
+            onTogglePaintMode={() => {
               if (activeColor) {
-                dispatch({
-                  type: 'SET_PART_COLOR',
-                  partId: selectedPart,
-                  color: activeColor,
-                })
+                setPaintMode((current) => !current)
+                setEyedropperActive(false)
               }
             }}
-            onApplyToAll={() => {
-              if (activeColor) {
-                dispatch({ type: 'SET_ALL_PART_COLORS', color: activeColor })
-              }
-            }}
-            onToggleEyedropper={() => setEyedropperActive((current) => !current)}
+            onBrushWidthChange={setBrushWidth}
           />
 
           <TemplatePicker
             selectedId={editor.present.templateId}
-            partColors={editor.present.partColors}
             onSelect={(templateId) => dispatch({ type: 'SET_TEMPLATE', templateId })}
           />
 

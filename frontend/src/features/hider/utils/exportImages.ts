@@ -1,6 +1,6 @@
 import type { CharacterTransform } from '../../../shared/types'
 import type { CharacterTemplate } from '../assets/templates'
-import type { CapturedPhoto, CharacterExportBundle, PartColors } from '../types'
+import type { CapturedPhoto, CharacterExportBundle, PaintStroke } from '../types'
 import { getCharacterPixelBox } from './geometry'
 import { canvasToBlob, createCanvas, loadImage } from './image'
 import { buildCharacterSvg } from './svgTemplate'
@@ -33,9 +33,9 @@ function toSvgDataUrl(svg: string) {
 
 export async function loadCharacterImage(
   template: CharacterTemplate,
-  partColors: PartColors,
+  paintStrokes: PaintStroke[],
 ) {
-  return loadImage(toSvgDataUrl(buildCharacterSvg(template, partColors)))
+  return loadImage(toSvgDataUrl(buildCharacterSvg(template, paintStrokes)))
 }
 
 export async function renderOriginalJpeg(photo: CapturedPhoto): Promise<Blob> {
@@ -49,9 +49,9 @@ export async function renderOriginalJpeg(photo: CapturedPhoto): Promise<Blob> {
 
 export async function renderCharacterPng(
   template: CharacterTemplate,
-  partColors: PartColors,
+  paintStrokes: PaintStroke[],
 ): Promise<Blob> {
-  const image = await loadCharacterImage(template, partColors)
+  const image = await loadCharacterImage(template, paintStrokes)
   const { canvas, context } = createCanvas(
     template.width * CHARACTER_EXPORT_SCALE,
     template.height * CHARACTER_EXPORT_SCALE,
@@ -66,12 +66,12 @@ export async function renderCharacterPng(
 export async function renderPreviewJpeg(
   photo: CapturedPhoto,
   template: CharacterTemplate,
-  partColors: PartColors,
+  paintStrokes: PaintStroke[],
   transform: CharacterTransform,
 ): Promise<Blob> {
   const [background, character] = await Promise.all([
     loadImage(photo.objectUrl),
-    loadCharacterImage(template, partColors),
+    loadCharacterImage(template, paintStrokes),
   ])
 
   const { canvas, context } = createCanvas(photo.width, photo.height)
@@ -96,13 +96,13 @@ export async function renderPreviewJpeg(
 export async function exportCharacterBundle(
   photo: CapturedPhoto,
   template: CharacterTemplate,
-  partColors: PartColors,
+  paintStrokes: PaintStroke[],
   transform: CharacterTransform,
 ): Promise<CharacterExportBundle> {
   const [original, character, preview] = await Promise.all([
     renderOriginalJpeg(photo),
-    renderCharacterPng(template, partColors),
-    renderPreviewJpeg(photo, template, partColors, transform),
+    renderCharacterPng(template, paintStrokes),
+    renderPreviewJpeg(photo, template, paintStrokes, transform),
   ])
 
   return { original, character, preview }

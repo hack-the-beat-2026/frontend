@@ -87,6 +87,27 @@ export function stagePointToPhotoPixel(
   }
 }
 
+/** Map a displayed stage point into the unrotated template coordinate space. */
+export function stagePointToCharacterPoint(
+  point: { x: number; y: number },
+  box: CharacterPixelBox,
+  template: Size,
+  rotation: number,
+) {
+  const dx = point.x - box.centerX
+  const dy = point.y - box.centerY
+  const radians = (rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const unrotatedX = dx * cos + dy * sin
+  const unrotatedY = -dx * sin + dy * cos
+
+  return {
+    x: clamp(((unrotatedX + box.width / 2) / box.width) * template.width, 0, template.width),
+    y: clamp(((unrotatedY + box.height / 2) / box.height) * template.height, 0, template.height),
+  }
+}
+
 export function distanceBetween(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }

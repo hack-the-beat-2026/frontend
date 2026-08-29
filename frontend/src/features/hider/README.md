@@ -11,7 +11,7 @@ the Party or Seeker features.
 - Pose / silhouette selection
 - Drag, scale and rotate the character over the photo
 - Eyedropper colour sampling from the photo
-- Part-based colouring (Head / Body / Arms / Legs)
+- Freehand camouflage painting with colours sampled from the place photo
 - Undo / Reset / preview
 - Export of the three submission files and character submit
 - Post-submit waiting and the hiding-phase screen

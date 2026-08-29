@@ -19,7 +19,8 @@ export type {
   CapturedPhoto,
   CharacterExportBundle,
   EditorUiState,
-  PartColors,
   PartId,
+  PaintPoint,
+  PaintStroke,
   SubmitPhase,
 } from './types'

@@ -178,6 +178,47 @@ export const mockDevTools = {
     return created
   },
 
+  /**
+   * 제출된 캐릭터를 전부 HIDDEN으로 만든다.
+   * 실제로는 HIDER가 /characters/{id}/hidden 을 호출해야 하지만,
+   * Front B 없이 HOST 화면만으로 탐색 단계까지 가보려면 대신 눌러줄 수단이 필요하다.
+   */
+  markAllHidden(gameId: number): number {
+    const db = readDb()
+    let changed = 0
+    for (const character of db.characters) {
+      if (character.gameId !== gameId) continue
+      if (character.status === 'FOUND' || character.status === 'HIDDEN') continue
+      character.status = 'HIDDEN'
+      changed += 1
+    }
+    writeDb(db)
+    return changed
+  },
+
+  /** 현재 Phase의 시작 시각을 뒤로 당겨 제한시간이 지난 것으로 만든다. */
+  skipTimer(gameId: number): boolean {
+    const db = readDb()
+    const game = db.games.find((g) => g.gameId === gameId)
+    if (!game) return false
+
+    const past = (seconds: number) =>
+      new Date(Date.now() - (seconds + 5) * 1000).toISOString()
+
+    if (game.status === 'DESIGNING') {
+      game.designStartedAt = past(game.designDurationSeconds)
+    } else if (game.status === 'HIDING') {
+      game.hideStartedAt = past(game.hideDurationSeconds)
+    } else if (game.status === 'SEEKING') {
+      game.seekStartedAt = past(game.seekDurationSeconds)
+    } else {
+      return false
+    }
+
+    writeDb(db)
+    return true
+  },
+
   snapshot(): MockDb {
     return readDb()
   },

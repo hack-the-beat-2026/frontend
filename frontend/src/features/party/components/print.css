@@ -1,0 +1,164 @@
+/*
+ * 인쇄 레이아웃.
+ *
+ * mm 단위가 필요해서 Tailwind 유틸리티 대신 별도 스타일시트로 둔다.
+ * 모든 선택자를 .print-root 아래로 한정해 다른 화면에 새지 않게 한다.
+ *
+ * 앞면/뒷면의 절단 영역(.print-card)은 크기·위치가 정확히 같아야 한다.
+ * 이 파일을 고칠 때는 앞뒤를 반드시 같이 확인한다 (architecture.md §17.4).
+ */
+
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+.print-root {
+  --gap: 2mm;
+  --cut: #b8b8b8;
+  --fold: #d4d4d4;
+}
+
+.print-page {
+  box-sizing: border-box;
+  width: 190mm; /* A4 210mm - 좌우 여백 10mm */
+  min-height: 277mm;
+  padding: 0;
+  background: #fff;
+}
+
+.print-page + .print-page {
+  margin-top: 8mm;
+}
+
+.print-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), max-content);
+  gap: var(--gap);
+  justify-content: start;
+  align-content: start;
+}
+
+/* 절단 영역. 앞면과 뒷면이 동일해야 한다. */
+.print-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--card-w);
+  height: var(--card-h);
+  padding: 3mm;
+  border: 0.3mm dashed var(--cut);
+  overflow: hidden;
+}
+
+.print-card--empty {
+  border-color: #ececec;
+}
+
+.print-card__image {
+  flex: 1;
+  width: 100%;
+  object-fit: contain;
+  min-height: 0;
+}
+
+.print-card__name {
+  margin-top: 1.5mm;
+  font-size: 2.6mm;
+  line-height: 1.2;
+  color: #666;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.print-card__qr {
+  display: block;
+  width: var(--qr);
+  height: var(--qr);
+}
+
+.print-card__slot {
+  margin-top: 1.5mm;
+  font-size: 3mm;
+  font-weight: 700;
+  color: #111;
+}
+
+.print-card__token {
+  margin-top: 0.8mm;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.9mm;
+  color: #999;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── 접지형 단면 ─────────────────────────────────────────────
+   슬롯 하나가 [캐릭터 | QR]로 붙어 있고, 인쇄면이 바깥으로 오게
+   가운데를 접으면 앞면 캐릭터 / 뒷면 QR인 카드가 된다.
+   바깥 테두리만 자르고 가운데 선은 자르지 않는다. */
+.print-fold-slot {
+  display: flex;
+  border: 0.3mm dashed var(--cut);
+}
+
+.print-fold-slot .print-card {
+  border: none;
+}
+
+.print-fold-line {
+  width: 0;
+  border-left: 0.3mm dotted var(--fold);
+}
+
+.print-fold-hint {
+  position: relative;
+}
+
+.print-fold-hint::after {
+  content: '접는 선';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  font-size: 1.8mm;
+  color: #bbb;
+  background: #fff;
+  padding: 0 0.5mm;
+}
+
+/* ── 화면 미리보기 ───────────────────────────────────────── */
+@media screen {
+  .print-page {
+    zoom: 0.42;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+  }
+}
+
+@media screen and (min-width: 900px) {
+  .print-page {
+    zoom: 0.72;
+  }
+}
+
+/* ── 실제 인쇄 ───────────────────────────────────────────── */
+@media print {
+  .print-page {
+    zoom: 1;
+    box-shadow: none;
+    margin: 0;
+    break-inside: avoid;
+  }
+
+  .print-page + .print-page {
+    margin-top: 0;
+    break-before: page;
+  }
+}

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "vite build --ssr scripts/smoke.mock.ts --outDir node_modules/.smoke --logLevel error && node node_modules/.smoke/smoke.mock.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

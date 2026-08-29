@@ -213,6 +213,7 @@ const submitCharacter = ({
 }: MockContext): MockCharacter => {
   const game = gameById(db, Number(params.gameId))
   const participant = requireParticipant(db, game.roomId, token)
+  refreshGame(db, game)
   requireStatus(game, ['DESIGNING'])
 
   if (participant.role !== 'HIDER') {
@@ -347,6 +348,9 @@ export const routes: MockRoute[] = [
     handler: ({ db, params, token }): Game => {
       const game = gameById(db, Number(params.gameId))
       requireHost(db, game.roomId, token)
+      // 요청 시점에 서버가 먼저 상태를 다시 계산한다.
+      // (전원 제출로 DESIGNING → PRINTING이 넘어갔을 수 있다)
+      refreshGame(db, game)
       requireStatus(game, ['PRINTING'])
       game.status = 'HIDING'
       game.hideStartedAt = nowIso()
@@ -360,6 +364,7 @@ export const routes: MockRoute[] = [
     handler: ({ db, params, token }): Game => {
       const game = gameById(db, Number(params.gameId))
       requireHost(db, game.roomId, token)
+      refreshGame(db, game)
       requireStatus(game, ['HIDING'])
       startSeeking(db, game)
       return decorate(db, game)
@@ -372,6 +377,7 @@ export const routes: MockRoute[] = [
     handler: ({ db, params, token }): Game => {
       const game = gameById(db, Number(params.gameId))
       requireHost(db, game.roomId, token)
+      refreshGame(db, game)
       requireStatus(game, ['HIDING', 'SEEKING'])
       finishGame(db, game)
       return decorate(db, game)
@@ -429,6 +435,7 @@ export const routes: MockRoute[] = [
     handler: ({ db, params, token }): MockCharacter => {
       const game = gameById(db, Number(params.gameId))
       const participant = requireParticipant(db, game.roomId, token)
+      refreshGame(db, game)
       requireStatus(game, ['HIDING'])
 
       const character = db.characters.find(

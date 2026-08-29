@@ -16,3 +16,5 @@ export type {
   FinalSeekerResult,
   SeekerFinalResultPageProps,
 } from './pages/SeekerFinalResultPage'
+export { default as SeekerMockPage } from './pages/SeekerMockPage'
+export type { SeekerMockScreen } from './pages/SeekerMockPage'

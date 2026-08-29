@@ -1,0 +1,126 @@
+.seeker-mock-page {
+  min-height: 100svh;
+  background: #101421;
+}
+
+.seeker-mock-page__toolbar {
+  position: fixed;
+  z-index: 10;
+  top: 12px;
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid rgba(169, 186, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(16, 20, 33, 0.88);
+  transform: translateX(-50%);
+  backdrop-filter: blur(10px);
+}
+
+.seeker-mock-page__toolbar button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  color: #8d98b8;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seeker-mock-page__toolbar button.is-active,
+.seeker-mock-page__toolbar button:hover {
+  color: #111525;
+  background: #a9baff;
+}
+
+.seeker-mock-scanner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: 120px 24px 32px;
+  color: #f5f7ff;
+  text-align: center;
+}
+
+.seeker-mock-scanner__eyebrow {
+  margin: 0 0 10px;
+  color: #819cff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.seeker-mock-scanner h1 {
+  margin: 0;
+  font-size: clamp(28px, 7vw, 44px);
+  letter-spacing: -0.04em;
+}
+
+.seeker-mock-scanner p:not(.seeker-mock-scanner__eyebrow) {
+  max-width: 340px;
+  margin: 14px 0 28px;
+  color: #aab3cd;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.seeker-mock-scanner__frame {
+  display: grid;
+  width: min(100%, 300px);
+  aspect-ratio: 3 / 4;
+  place-items: center;
+  border: 1px solid rgba(136, 158, 255, 0.38);
+  border-radius: 22px;
+  background: #080b14;
+}
+
+.seeker-mock-scanner__frame span {
+  width: 130px;
+  height: 130px;
+  border: 3px solid #a9baff;
+  border-radius: 16px;
+}
+
+.seeker-mock-scanner__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.seeker-mock-scanner__buttons button {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(169, 186, 255, 0.4);
+  border-radius: 11px;
+  color: #d8def2;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.seeker-mock-scanner__buttons button:first-child {
+  border-color: transparent;
+  color: #111525;
+  background: #a9baff;
+}
+
+.seeker-mock-scanner__buttons button:hover {
+  background: rgba(169, 186, 255, 0.12);
+}
+
+.seeker-mock-scanner__buttons button:first-child:hover {
+  background: #c0ccff;
+}

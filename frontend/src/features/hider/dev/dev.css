@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+
+/*
+ * Standalone styling for the hider dev harness only.
+ *
+ * Deliberately does NOT import `src/index.css`: that file belongs to the shared
+ * app shell, and this harness must stay independent of it.
+ */
+body {
+  margin: 0;
+  background: #f7f7f8;
+  color: #171717;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
